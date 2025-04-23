@@ -4,11 +4,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreatePaiementsTable extends Migration
+class CreatePaymentTable extends Migration
 {
     public function up()
     {
-        Schema::create('paiements', function (Blueprint $table) {
+        Schema::create('Payment', function (Blueprint $table) {
             $table->id();
             $table->foreignId('commande_id')->constrained()->onDelete('cascade');
             $table->string('mode_paiement'); // carte, paypal, etc
@@ -19,6 +19,6 @@ class CreatePaiementsTable extends Migration
 
     public function down()
     {
-        Schema::dropIfExists('paiements');
+        Schema::dropIfExists('Payment');
     }
 }

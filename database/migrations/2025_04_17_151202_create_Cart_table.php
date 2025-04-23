@@ -4,22 +4,21 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateLigneCommandesTable extends Migration
+class CreateCartTable extends Migration
 {
     public function up()
     {
-        Schema::create('ligne_commandes', function (Blueprint $table) {
+        Schema::create('Cart', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('commande_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
-            $table->integer('quantite');
-            $table->decimal('prix_unitaire', 8, 2);
+            $table->integer('quantite')->default(1);
             $table->timestamps();
         });
     }
 
     public function down()
     {
-        Schema::dropIfExists('ligne_commandes');
+        Schema::dropIfExists('Cart');
     }
 }
