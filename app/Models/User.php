@@ -4,12 +4,9 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Laravel\Sanctum\HasApiTokens;
+use TCG\Voyager\Traits\VoyagerUser;
 
-class User extends Authenticatable
+class User extends \TCG\Voyager\Models\User
 {
-    use HasApiTokens, HasFactory, Notifiable;
-
-    protected $fillable = ['name', 'email', 'password'];
+    use Notifiable, VoyagerUser;
 }

@@ -6,7 +6,10 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:3008'],
+
+'allowed_origins' => ['http://localhost:3000'],
+
+
 
 
 
