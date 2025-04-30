@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
@@ -23,4 +24,76 @@ class ProductController extends Controller
 
         return response()->json($product);
     }
+
+    public function productsByCategory($id)
+    {
+        $products = Product::with(['images', 'category'])
+                    ->where('category_id', $id)
+                    ->paginate(8);
+
+        return response()->json($products);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'price' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'category_id' => 'required|exists:categories,id',
+        ]);
+
+        $product = Product::create($validated);
+
+        return response()->json($product, 201);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $product = Product::find($id);
+
+        if (!$product) {
+            return response()->json(['message' => 'Produit non trouvé'], 404);
+        }
+
+        $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'description' => 'nullable|string',
+            'price' => 'sometimes|required|numeric|min:0',
+            'stock' => 'sometimes|required|integer|min:0',
+            'category_id' => 'sometimes|required|exists:categories,id',
+        ]);
+
+        $product->update($validated);
+
+        return response()->json($product);
+    }
+
+    public function destroy($id)
+    {
+        $product = Product::find($id);
+
+        if (!$product) {
+            return response()->json(['message' => 'Produit non trouvé'], 404);
+        }
+
+        $product->delete();
+
+        return response()->json(['message' => 'Produit supprimé avec succès']);
+    }
+
+
+    public function search(Request $request)
+{
+    $query = strtolower($request->query('query'));
+
+    $results = Product::with('images') 
+        ->whereRaw('LOWER(name) LIKE ?', ["%$query%"])
+        ->orWhereRaw('LOWER(description) LIKE ?', ["%$query%"])
+        ->get();
+
+    return response()->json($results);
+}
+
 }

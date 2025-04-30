@@ -6,48 +6,90 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-
+    // Register
     public function register(Request $request)
     {
-        $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:6'
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:6|confirmed',
         ]);
 
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
         $user = User::create([
-            'name' => $request->first_name . ' ' . $request->last_name, 
+            'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
 
+        $token = JWTAuth::fromUser($user);
+
         return response()->json([
-            'message' => 'Compte créé avec succès',
-            'user' => $user
-        ], 201);
+            'user' => $user,
+            'token' => $token
+        ]);
     }
 
-   
+    // Login
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
+        $credentials = $request->only('email', 'password');
 
-        $user = User::where('email', $credentials['email'])->first();
-
-        if (!$user || !Hash::check($credentials['password'], $user->password)) {
-            return response()->json(['error' => 'Email ou mot de passe incorrect'], 401);
+        if (!$token = JWTAuth::attempt($credentials)) {
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
 
         return response()->json([
-            'message' => 'Connexion réussie',
-            'user' => $user
-        ], 200);
+            'user' => Auth::user(),
+            'token' => $token
+        ]);
     }
+
+    // User connecté
+    public function user()
+    {
+        return response()->json(auth()->user());
+    }
+
+    // Logout
+    public function logout()
+    {
+        auth()->logout();
+
+        return response()->json(['message' => 'Successfully logged out']);
+    }
+
+    // Refresh token
+    public function refresh()
+    {
+        return response()->json([
+            'token' => auth()->refresh()
+        ]);
+    }
+    public function update(Request $request)
+{
+    $user = auth()->user();
+
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
+    ]);
+
+    $user->update([
+        'name' => $request->name,
+        'email' => $request->email,
+    ]);
+
+    return response()->json(['message' => 'Profil mis à jour avec succès']);
+}
+
 }

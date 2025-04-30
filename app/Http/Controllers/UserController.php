@@ -3,13 +3,13 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash; // hadi khassha tkon f l'header
+use Illuminate\Support\Facades\Hash; 
 
 class UserController extends Controller
 {
     public function update(Request $request)
     {
-        $user = $request->user(); // kayjib user connecté
+        $user = $request->user();
 
         $request->validate([
             'first_name' => 'string|nullable',
@@ -26,13 +26,13 @@ class UserController extends Controller
         }
 
         if ($request->has('password')) {
-            $user->password = Hash::make($request->password); // crypti password
+            $user->password = Hash::make($request->password);
         }
 
-        $user->save(); // sauvegarde les modifications
+        $user->save(); 
 
         return response()->json([
-            'message' => 'Profil tbdl b naja7.',
+            'message' => 'Profil a été modifié.',
             'user' => $user,
         ]);
     }
