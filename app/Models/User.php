@@ -9,7 +9,7 @@ use TCG\Voyager\Contracts\User as VoyagerUserContract;
 
 use TCG\Voyager\Traits\VoyagerUser;
 
-class User extends Authenticatable implements JWTSubject, VoyagerUserContract
+class User extends \TCG\Voyager\Models\User implements JWTSubject, VoyagerUserContract
 {
     use Notifiable, VoyagerUser;
 

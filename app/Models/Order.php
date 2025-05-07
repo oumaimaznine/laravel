@@ -13,6 +13,10 @@ class Order extends Model
         'user_id',
         'total',
         'status',
+        'shipping_address',
+        'payment_method',
+        'payment_status',
+        'transaction_id',
     ];
 
     public function items()
@@ -20,7 +24,6 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
-  
     public function user()
     {
         return $this->belongsTo(User::class);

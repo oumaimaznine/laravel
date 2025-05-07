@@ -44,5 +44,12 @@ return [
         'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
         'redirect' => env('FACEBOOK_REDIRECT'),
     ],
+ 'paypal' => [
+    'client_id' => env('PAYPAL_CLIENT_ID'),
+    'secret' => env('PAYPAL_SECRET'),
+    'base_url' => env('PAYPAL_BASE_URL', 'https://api-m.sandbox.paypal.com'),
+],
+
+
 
 ];

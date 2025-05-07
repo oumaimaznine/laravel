@@ -8,7 +8,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\AddressController;
 use App\Http\Controllers\OrderController; 
-
+use App\Http\Controllers\PaymentController;
 
 // =================== PUBLIC ROUTES ===================
 Route::get('/products', [ProductController::class, 'index']);
@@ -18,18 +18,21 @@ Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{id}', [CategoryController::class, 'show']);
 Route::get('/search', [ProductController::class, 'search']);
 
-
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 
+
+Route::post('/payment/paypal/success', [PaymentController::class, 'handlePaypalSuccess']);
+
+
 // =================== PROTECTED ROUTES ===================
 Route::middleware('auth:api')->group(function () {
+
     // Auth
     Route::get('/user', [AuthController::class, 'user']);
     Route::put('/user', [AuthController::class, 'update']);
     Route::post('/logout', [AuthController::class, 'logout']);
- 
 
     // Cart
     Route::get('/cart', [CartController::class, 'index']);
@@ -37,7 +40,7 @@ Route::middleware('auth:api')->group(function () {
     Route::put('/cart/items/{id}', [CartController::class, 'update']);
     Route::delete('/cart/items/{id}', [CartController::class, 'destroy']);
 
-    // Products
+    // Products CRUD (admin usually)
     Route::post('/products', [ProductController::class, 'store']);
     Route::put('/products/{id}', [ProductController::class, 'update']);
     Route::delete('/products/{id}', [ProductController::class, 'destroy']);
@@ -50,7 +53,4 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/orders', [OrderController::class, 'index']);          
     Route::get('/orders/{id}', [OrderController::class, 'show']);     
     Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']); 
-    Route::middleware('auth:api')->post('/orders', [OrderController::class, 'store']);
-
 });
-

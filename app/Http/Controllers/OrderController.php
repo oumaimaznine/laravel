@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -11,49 +12,60 @@ class OrderController extends Controller
     // Créer une nouvelle commande
     public function store(Request $request)
     {
-        // Création d'une commande avec l'utilisateur connecté
         $order = Order::create([
-            'user_id' => Auth::id(),            // ID de l'utilisateur connecté
-            'total' => $request->total,         // Montant total de la commande
-            'status' => 'en_attente'            // Statut par défaut
+            'user_id' => Auth::id(),
+            'total' => $request->total,
+            'status' => 'en_attente',
+            'shipping_address' => $request->shipping_address,
+            'payment_method' => $request->payment_method ?? 'paypal',
+            'payment_status' => $request->payment_status ?? 'paid',
+            'transaction_id' => $request->transaction_id ?? null,
         ]);
 
-        // Retourner un message de succès avec les détails de la commande
+        // Enregistrer les produits de la commande
+        foreach ($request->cart as $item) {
+            OrderItem::create([
+                'order_id' => $order->id,
+                'product_id' => $item['product']['id'],
+                'quantity' => $item['quantity'],
+                'unit_price' => $item['product']['price'],
+            ]);
+        }
+
         return response()->json([
             'message' => 'Commande créée avec succès',
             'order' => $order
         ]);
     }
 
-    // Lister toutes les commandes de l'utilisateur connecté
+    //  Voir toutes les commandes de l'utilisateur connecté
     public function index()
     {
-        // Retourner toutes les commandes de l'utilisateur connecté
-        return Order::where('user_id', Auth::id())->get();
+        return Order::with('items.product')
+            ->where('user_id', Auth::id())
+            ->latest()
+            ->get();
     }
 
-    // Voir les détails d'une commande spécifique
+    //  Voir les détails d'une commande spécifique
     public function show($id)
     {
-        // Rechercher une commande par ID appartenant à l'utilisateur connecté
-        return Order::where('id', $id)
-                    ->where('user_id', Auth::id())
-                    ->firstOrFail(); // Retourne 404 si non trouvée
+        return Order::with('items.product')
+            ->where('id', $id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
     }
 
-    // Mettre à jour le statut d'une commande (réservé à l'admin)
+    // Modifier le statut d'une commande (admin)
     public function updateStatus($id, Request $request)
     {
-        // Rechercher la commande
         $order = Order::findOrFail($id);
-
-        // Modifier son statut
         $order->status = $request->status;
         $order->save();
 
-        // Retourner un message de succès
         return response()->json([
-            'message' => 'Statut mis à jour avec succès'
+            'message' => 'Statut mis à jour avec succès',
+            'order' => $order
         ]);
     }
 }
