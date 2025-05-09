@@ -9,19 +9,20 @@ class Address extends Model
 {
     use HasFactory;
 
-    // Les colonnes autorisées à l'insertion (fillables)
     protected $fillable = [
         'user_id',
         'first_name',
         'last_name',
+        'phone',
         'address',
+        'region',
         'city',
         'postal_code',
         'country',
-        'phone',
     ];
+    
 
-    // Relation avec l'utilisateur
+    // Optionnel : relation avec utilisateur
     public function user()
     {
         return $this->belongsTo(User::class);

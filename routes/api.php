@@ -7,10 +7,17 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\AddressController;
-use App\Http\Controllers\OrderController; 
+use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\SocialAuthController;
 
 // =================== PUBLIC ROUTES ===================
+
+// Social Login Facebook
+Route::get('/login/facebook', [SocialAuthController::class, 'redirectToFacebook']);
+Route::get('/login/facebook/callback', [SocialAuthController::class, 'handleFacebookCallback']);
+
+// Produits et catégories
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{id}', [ProductController::class, 'show']);
 Route::get('/category/{id}/products', [ProductController::class, 'productsByCategory']);
@@ -18,39 +25,40 @@ Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{id}', [CategoryController::class, 'show']);
 Route::get('/search', [ProductController::class, 'search']);
 
+// Authentification
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-
-
+// Paiement PayPal
 Route::post('/payment/paypal/success', [PaymentController::class, 'handlePaypalSuccess']);
 
 
 // =================== PROTECTED ROUTES ===================
 Route::middleware('auth:api')->group(function () {
 
-    // Auth
+    // Utilisateur
     Route::get('/user', [AuthController::class, 'user']);
     Route::put('/user', [AuthController::class, 'update']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // Cart
+    // Panier (Cart)
     Route::get('/cart', [CartController::class, 'index']);
     Route::post('/cart/items', [CartController::class, 'store']);
     Route::put('/cart/items/{id}', [CartController::class, 'update']);
     Route::delete('/cart/items/{id}', [CartController::class, 'destroy']);
 
-    // Products CRUD (admin usually)
+    // Gestion produits (si admin)
     Route::post('/products', [ProductController::class, 'store']);
     Route::put('/products/{id}', [ProductController::class, 'update']);
     Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 
-    // Address
-    Route::post('/addresses', [AddressController::class, 'store']);
+    // Adresses
+    Route::post('/address', [AddressController::class, 'store']);
+    Route::get('/address', [AddressController::class, 'getAddress']);
 
-    // Orders
-    Route::post('/orders', [OrderController::class, 'store']);        
-    Route::get('/orders', [OrderController::class, 'index']);          
-    Route::get('/orders/{id}', [OrderController::class, 'show']);     
-    Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']); 
+    // Commandes (Orders)
+    Route::post('/orders', [OrderController::class, 'store']);
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders/{id}', [OrderController::class, 'show']);
+    Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
 });

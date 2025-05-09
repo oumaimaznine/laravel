@@ -11,13 +11,18 @@ return new class extends Migration
         Schema::create('addresses', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
-            $table->string('first_name');
-            $table->string('last_name');
+
+            $table->string('first_name'); 
+            $table->string('last_name');    
+          
+            $table->string('phone')->nullable();  
             $table->string('address');
-            $table->string('city');
-            $table->string('postal_code')->nullable();
-            $table->string('country');
-            $table->string('phone')->nullable();
+            $table->string('city');   
+            $table->string('postal_code')->nullable(); 
+            $table->string('country');    
+
+         
+
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

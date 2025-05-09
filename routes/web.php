@@ -61,4 +61,5 @@ Route::get('/debug-paypal', function () {
         'secret' => config('services.paypal.secret'),
         'base_url' => config('services.paypal.base_url'),
     ];
+    
 });

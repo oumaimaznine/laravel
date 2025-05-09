@@ -5,12 +5,12 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Payment; 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 
 class PaymentController extends Controller
 {
-    
     private function getPaypalAccessToken()
     {
         $clientId = config('services.paypal.client_id');
@@ -34,26 +34,23 @@ class PaymentController extends Controller
         $data = $response->json();
 
         if (!isset($data['access_token'])) {
-            \Log::error(' Token manquant dans réponse PayPal: ' . json_encode($data));
+            \Log::error('Token manquant dans réponse PayPal: ' . json_encode($data));
             return null;
         }
 
         return $data['access_token'];
     }
 
-    /**
-     * Enregistrer la commande après succès PayPal
-     */
     public function handlePaypalSuccess(Request $request)
     {
         try {
-            \Log::info(' Données reçues:', $request->all());
+            \Log::info('Données reçues:', $request->all());
 
             $user = Auth::user();
             $userId = $user ? $user->id : $request->input('user_id');
 
             if (!$userId) {
-                \Log::error(" user_id manquant !");
+                \Log::error("user_id manquant !");
                 return response()->json(['error' => 'Utilisateur non authentifié'], 401);
             }
 
@@ -67,17 +64,15 @@ class PaymentController extends Controller
             }
 
             if (!$total || !$paypalTransactionId) {
-                \Log::error(" Données manquantes: total ou transaction_id");
+                \Log::error("Données manquantes: total ou transaction_id");
                 return response()->json(['error' => 'Données manquantes'], 400);
             }
 
-            // Token PayPal
             $accessToken = $this->getPaypalAccessToken();
             if (!$accessToken) {
                 return response()->json(['error' => 'Token PayPal manquant'], 500);
             }
 
-            //  Vérification transaction PayPal
             $url = config('services.paypal.base_url') . "/v2/checkout/orders/{$paypalTransactionId}";
             $paypalResponse = Http::withToken($accessToken)->get($url);
 
@@ -101,14 +96,14 @@ class PaymentController extends Controller
                 'payment_method' => 'paypal',
                 'payment_status' => 'paid',
                 'transaction_id' => $paypalTransactionId,
-                 'shipping_address' => 'Adresse inconnue'
+                'shipping_address' => 'Adresse inconnue',
             ]);
 
-            \Log::info(" Commande créée ID: " . $order->id);
+            \Log::info("Commande créée ID: " . $order->id);
 
             foreach ($cartItems as $item) {
                 if (!isset($item['product']['id'])) {
-                    \Log::warning(" Produit invalide:", $item);
+                    \Log::warning("Produit invalide:", $item);
                     continue;
                 }
 
@@ -120,7 +115,15 @@ class PaymentController extends Controller
                 ]);
             }
 
-            return response()->json(['message' => 'Commande enregistrée avec succès']);
+            //  Enregistrement du paiement
+            Payment::create([
+                'order_id' => $order->id,
+                'amount' => $total,
+                'status' => 'completed',
+                'method' => 'paypal',
+            ]);
+
+            return response()->json(['message' => ' Commande enregistrée avec succès']);
 
         } catch (\Exception $e) {
             \Log::error("Exception handlePaypalSuccess: " . $e->getMessage());
