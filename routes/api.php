@@ -39,10 +39,12 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 
+
 // =================== PROTECTED ROUTES ===================
 Route::middleware('auth:api')->group(function () {
 Route::post('/payment/paypal/success', [PaymentController::class, 'handlePaypalSuccess']);
 Route::post('/payment/stripe', [StripeController::class, 'createPaymentIntent']);
+Route::post('/payment/stripe/success', [StripeController::class, 'handleStripeSuccess']);
 
     // Utilisateur
     Route::get('/user', [AuthController::class, 'user']);
