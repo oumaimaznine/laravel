@@ -32,11 +32,12 @@ return [
     ],
 
     //  Google Login
-    'google' => [
-        'client_id' => env('GOOGLE_CLIENT_ID'),
-        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect' => env('GOOGLE_REDIRECT'),
-    ],
+
+'google' => [
+    'client_id' => env('GOOGLE_CLIENT_ID'),
+    'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+    'redirect' => env('GOOGLE_REDIRECT_URI'),
+],
 
     // Facebook Login
    'facebook' => [
@@ -49,6 +50,10 @@ return [
     'client_id' => env('PAYPAL_CLIENT_ID'),
     'secret' => env('PAYPAL_SECRET'),
     'base_url' => env('PAYPAL_BASE_URL', 'https://api-m.sandbox.paypal.com'),
+],
+'stripe' => [
+    'key' => env('STRIPE_KEY'),
+    'secret' => env('STRIPE_SECRET'),
 ],
 
 

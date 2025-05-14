@@ -12,6 +12,7 @@
         "laravel/sanctum": "^3.3",
         "laravel/socialite": "^5.20",
         "laravel/tinker": "^2.7",
+        "stripe/stripe-php": "^17.2",
         "tcg/voyager": "^1.7",
         "tymon/jwt-auth": "*"
     },

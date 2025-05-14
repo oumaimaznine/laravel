@@ -28,4 +28,10 @@ class User extends \TCG\Voyager\Models\User implements JWTSubject, VoyagerUserCo
     {
         return [];
     }
+     // Optionnel : relation avec adress
+    public function address()
+    {
+        return $this->hasOne(\App\Models\Address::class);
+    }
+
 }

@@ -6,7 +6,6 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-
 class OrderController extends Controller
 {
     // Créer une nouvelle commande
@@ -15,6 +14,7 @@ class OrderController extends Controller
         $user = Auth::user();
         if (!$user) {
             return response()->json(['error' => 'Utilisateur non authentifié'], 401);
+            
         }
 
         $order = Order::create([
