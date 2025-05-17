@@ -8,12 +8,20 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    public function index()
+    
+    public function index(Request $request)
     {
-        $products = Product::with(['images', 'category'])->get();
+        $query = Product::with(['images', 'category']);
+
+        if ($request->has('promo') && $request->promo == 1) {
+            $query->where('is_promo', true);
+        }
+
+        $products = $query->get();
         return response()->json($products);
     }
 
+    
     public function show($id)
     {
         $product = Product::with(['images', 'category'])->find($id);
@@ -25,11 +33,11 @@ class ProductController extends Controller
         return response()->json($product);
     }
 
+   
     public function productsByCategory($id, Request $request)
     {
-        $query = Product::with(['images', 'category'])
-            ->where('category_id', $id);
-    
+        $query = Product::with(['images', 'category'])->where('category_id', $id);
+
         switch ($request->input('sort')) {
             case 'price_asc':
                 $query->orderBy('price', 'asc');
@@ -50,29 +58,27 @@ class ProductController extends Controller
                 $query->orderBy('created_at', 'asc');
                 break;
             default:
-                $query->orderBy('id', 'asc'); // tri par défaut
-                break;
+                $query->orderBy('id', 'asc');
         }
-    
+
         $products = $query->paginate(8);
-    
         return response()->json($products);
     }
-    
-    
 
+   
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
+            'old_price' => 'nullable|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'category_id' => 'required|exists:categories,id',
+            'is_promo' => 'nullable|boolean',
         ]);
 
         $product = Product::create($validated);
-
         return response()->json($product, 201);
     }
 
@@ -88,12 +94,13 @@ class ProductController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
             'price' => 'sometimes|required|numeric|min:0',
+            'old_price' => 'nullable|numeric|min:0',
             'stock' => 'sometimes|required|integer|min:0',
             'category_id' => 'sometimes|required|exists:categories,id',
+            'is_promo' => 'nullable|boolean',
         ]);
 
         $product->update($validated);
-
         return response()->json($product);
     }
 
@@ -106,21 +113,19 @@ class ProductController extends Controller
         }
 
         $product->delete();
-
         return response()->json(['message' => 'Produit supprimé avec succès']);
     }
 
-
+   
     public function search(Request $request)
-{
-    $query = strtolower($request->query('query'));
+    {
+        $query = strtolower($request->query('query'));
 
-    $results = Product::with('images') 
-        ->whereRaw('LOWER(name) LIKE ?', ["%$query%"])
-        ->orWhereRaw('LOWER(description) LIKE ?', ["%$query%"])
-        ->get();
+        $results = Product::with('images')
+            ->whereRaw('LOWER(name) LIKE ?', ["%$query%"])
+            ->orWhereRaw('LOWER(description) LIKE ?', ["%$query%"])
+            ->get();
 
-    return response()->json($results);
-}
-
+        return response()->json($results);
+    }
 }

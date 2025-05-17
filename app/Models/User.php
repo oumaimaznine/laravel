@@ -17,6 +17,8 @@ class User extends \TCG\Voyager\Models\User implements JWTSubject, VoyagerUserCo
         'name',
         'email',
         'password',
+        'verification_code',
+        'email_verified_at',
     ];
 
     public function getJWTIdentifier()
@@ -28,10 +30,15 @@ class User extends \TCG\Voyager\Models\User implements JWTSubject, VoyagerUserCo
     {
         return [];
     }
-     // Optionnel : relation avec adress
+     //  relation avec adress
     public function address()
     {
         return $this->hasOne(\App\Models\Address::class);
     }
+    public function reviews()
+{
+    return $this->hasMany(Review::class);
+}
+
 
 }

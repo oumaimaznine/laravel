@@ -17,6 +17,8 @@ class Product extends Model
         'stock',
         'image',
         'category_id',
+        'old_price',
+        'is_promo',
     ];
 
     // Category
@@ -30,5 +32,11 @@ class Product extends Model
 {
     return $this->hasMany(\App\Models\ProductImage::class, 'product_id');
 }
+public function reviews()
+{
+    return $this->hasMany(Review::class);
+}
+
 
 }
+
