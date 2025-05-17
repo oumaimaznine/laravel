@@ -7,95 +7,119 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\VerifyEmailCode;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-    //  Fonction d'enregistrement (création de compte)
+    // Fonction d'enregistrement
     public function register(Request $request)
     {
-        // Valider les données envoyées par l'utilisateur
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6|confirmed',
         ]);
 
-        // Retourner les erreurs de validation si elles existent
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
         }
 
-        // Créer un nouvel utilisateur dans la base de données
+        // Générer un code aléatoire
+        $verificationCode = Str::random(6);
+
+        // Créer utilisateur avec email non vérifié
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password), // Hacher le mot de passe
+            'password' => Hash::make($request->password),
+            'verification_code' => $verificationCode,
+            'email_verified_at' => null,
         ]);
 
-        // Générer un token JWT pour cet utilisateur
-        $token = JWTAuth::fromUser($user);
+        // Envoyer e-mail contenant le code
+        Mail::to($user->email)->send(new VerifyEmailCode($user));
 
-        // Retourner l'utilisateur et le token comme réponse JSON
+        return response()->json([
+            'message' => 'Compte créé. Un code de vérification a été envoyé à votre adresse email.',
+            'user' => $user,
+        ], 201);
+    }
+
+    // Fonction login
+    public function login(Request $request)
+    {
+        $credentials = $request->only('email', 'password');
+
+        if (!$token = JWTAuth::attempt($credentials)) {
+            return response()->json(['error' => 'Identifiants incorrects'], 401);
+        }
+
+        $user = Auth::user();
+
+        if (is_null($user->email_verified_at)) {
+            return response()->json(['error' => 'Votre email n\'est pas encore vérifié.'], 403);
+        }
+
         return response()->json([
             'user' => $user,
             'token' => $token
         ]);
     }
 
-    //  Fonction de connexion (login)
-    public function login(Request $request)
+    // Vérification du code reçu par email
+    public function verifyEmail(Request $request)
     {
-        // Récupérer uniquement l'email et le mot de passe
-        $credentials = $request->only('email', 'password');
+        $request->validate([
+            'email' => 'required|email',
+            'code' => 'required|string',
+        ]);
 
-        // Vérifier les identifiants avec JWT
-        if (!$token = JWTAuth::attempt($credentials)) {
-            return response()->json(['error' => 'Unauthorized'], 401); // Identifiants incorrects
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['error' => 'Utilisateur introuvable'], 404);
         }
 
-        // Retourner l'utilisateur connecté et le token
-        return response()->json([
-            'user' => Auth::user(),
-            'token' => $token
-        ]);
+        if ($user->verification_code !== $request->code) {
+            return response()->json(['error' => 'Code invalide'], 401);
+        }
+
+        $user->email_verified_at = now();
+        $user->verification_code = null;
+        $user->save();
+
+        return response()->json(['message' => 'Email vérifié avec succès']);
     }
 
-    //  Récupérer les informations de l'utilisateur connecté
     public function user()
     {
         return response()->json(auth()->user());
     }
 
-    //  Déconnexion (logout)
     public function logout()
     {
-        auth()->logout(); // Invalider le token
-
+        auth()->logout();
         return response()->json(['message' => 'Déconnecté avec succès']);
     }
 
-    //  Rafraîchir le token JWT
     public function refresh()
     {
-        return response()->json([
-            'token' => auth()->refresh()
-        ]);
+        return response()->json(['token' => auth()->refresh()]);
     }
 
-    //  Mettre à jour le profil de l'utilisateur connecté
     public function update(Request $request)
     {
-        $user = auth()->user(); // Récupérer l'utilisateur connecté
+        $user = auth()->user();
 
-        // Valider les nouvelles données
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
         ]);
 
-        // Mettre à jour les informations
         $user->update([
             'name' => $request->name,
             'email' => $request->email,
