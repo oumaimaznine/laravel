@@ -4,13 +4,6 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
-
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-*/
-
 Route::get('/', function () {
     return view('welcome');
 });
@@ -24,8 +17,6 @@ Route::group(['prefix' => 'admin'], function () {
 Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
     return redirect("http://localhost:3000/verify-email/$id/$hash");
 })->middleware(['signed'])->name('verification.verify');
-
-
 
 // Test accès token PayPal
 Route::get('/test-paypal', function () {
