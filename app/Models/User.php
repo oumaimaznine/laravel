@@ -7,6 +7,9 @@ use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use TCG\Voyager\Contracts\User as VoyagerUserContract; 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Notifications\VerifyEmailCustom;
+use Illuminate\Auth\Notifications\VerifyEmail as VerifyEmailBase;
+
 
 
 use TCG\Voyager\Traits\VoyagerUser;
@@ -20,9 +23,14 @@ class User extends \TCG\Voyager\Models\User implements JWTSubject, VoyagerUserCo
         'name',
         'email',
         'password',
+        'email_verified_at',   
        
     ];
-
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new VerifyEmailCustom());
+    }
+    
     public function getJWTIdentifier()
     {
         return $this->getKey();

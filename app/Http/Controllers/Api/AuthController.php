@@ -7,17 +7,16 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\VerifyEmailCode;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Auth\Events\Registered;
 
 class AuthController extends Controller
 {
-    // Fonction d'enregistrement
+    // Enregistrement avec vérification par email
     public function register(Request $request)
     {
+        //  Validation des données
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
@@ -28,33 +27,28 @@ class AuthController extends Controller
             return response()->json($validator->errors(), 422);
         }
 
-        // Générer un code aléatoire
-        $verificationCode = Str::random(6);
-
-        // Créer utilisateur avec email non vérifié
+        // Création du user
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
+            'name'     => $request->name,
+            'email'    => $request->email,
             'password' => Hash::make($request->password),
-            'verification_code' => $verificationCode,
-            'email_verified_at' => null,
         ]);
 
-        // Envoyer e-mail contenant le code
-        Mail::to($user->email)->send(new VerifyEmailCode($user));
+        // Envoi de l'email de vérification
+        event(new Registered($user));
 
         return response()->json([
-            'message' => 'Compte créé. Un code de vérification a été envoyé à votre adresse email.',
+            'message' => 'Inscription réussie. Vérifiez votre email pour activer votre compte.',
             'user' => $user,
         ], 201);
     }
 
-    // Fonction login
+    //  Connexion uniquement si email vérifié
     public function login(Request $request)
     {
         $credentials = $request->only('email', 'password');
 
-        if (!$token = JWTAuth::attempt($credentials)) {
+        if (! $token = JWTAuth::attempt($credentials)) {
             return response()->json(['error' => 'Identifiants incorrects'], 401);
         }
 
@@ -65,63 +59,45 @@ class AuthController extends Controller
         }
 
         return response()->json([
+            'message' => 'Connexion réussie',
             'user' => $user,
-            'token' => $token
+            'token' => $token,
         ]);
     }
 
-    // Vérification du code reçu par email
-    public function verifyEmail(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'code' => 'required|string',
-        ]);
-
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user) {
-            return response()->json(['error' => 'Utilisateur introuvable'], 404);
-        }
-
-        if ($user->verification_code !== $request->code) {
-            return response()->json(['error' => 'Code invalide'], 401);
-        }
-
-        $user->email_verified_at = now();
-        $user->verification_code = null;
-        $user->save();
-
-        return response()->json(['message' => 'Email vérifié avec succès']);
-    }
-
+    //  Récupérer l’utilisateur connecté
     public function user()
     {
         return response()->json(auth()->user());
     }
 
+    // Déconnexion
     public function logout()
     {
         auth()->logout();
         return response()->json(['message' => 'Déconnecté avec succès']);
     }
 
+    // Rafraîchir le token
     public function refresh()
     {
-        return response()->json(['token' => auth()->refresh()]);
+        return response()->json([
+            'token' => auth()->refresh()
+        ]);
     }
 
+    // Mise à jour du profil
     public function update(Request $request)
     {
         $user = auth()->user();
 
         $request->validate([
-            'name' => 'required|string|max:255',
+            'name'  => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
         ]);
 
         $user->update([
-            'name' => $request->name,
+            'name'  => $request->name,
             'email' => $request->email,
         ]);
 

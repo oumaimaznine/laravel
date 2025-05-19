@@ -2,6 +2,11 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Auth\Events\Verified;
+use App\Models\User;
+
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\AuthController;
@@ -15,82 +20,87 @@ use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\StripeController;
 use App\Http\Controllers\ReviewController;
 
-
-
-
-
-
 // =================== ROUTES PUBLIQUES ===================
-// Ces routes sont accessibles sans authentification
 
-// Authentification via réseaux sociaux (Facebook / Google)
+// Auth classique
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+
+// Réseaux sociaux
 Route::get('/login/facebook', [SocialAuthController::class, 'redirectToFacebook']);
 Route::get('/login/facebook/callback', [SocialAuthController::class, 'handleFacebookCallback']);
 Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle']);
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
-Route::post('/verify-email', [AuthController::class, 'verifyEmail']);
 
-// Affichage des avis pour un produit
+// Produits & catégories
+Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/{id}', [ProductController::class, 'show']);
+Route::get('/category/{id}/products', [ProductController::class, 'productsByCategory']);
+Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/categories/{id}', [CategoryController::class, 'show']);
+Route::get('/search', [ProductController::class, 'search']);
+Route::get('/recommendations/{productId}', [RecommendationController::class, 'getRecommendations']);
+
+// Avis clients (visiteurs)
 Route::get('/products/{id}/reviews', [ReviewController::class, 'getProductReviews']);
 
+// Route de vérification d’email sécurisée (React)
+Route::get('/verify-email/{id}/{hash}', function (Request $request, $id, $hash) {
+    $user = User::find($id);
 
+    if (!$user) {
+        return response()->json(['message' => 'Utilisateur introuvable.'], 404);
+    }
 
-// Affichage des produits et des catégories
-Route::get('/products', [ProductController::class, 'index']); // Tous les produits
-Route::get('/products/{id}', [ProductController::class, 'show']); // Détail d’un produit
-Route::get('/category/{id}/products', [ProductController::class, 'productsByCategory']); // Produits par catégorie
-Route::get('/categories', [CategoryController::class, 'index']); // Toutes les catégories
-Route::get('/categories/{id}', [CategoryController::class, 'show']); // Détail d'une catégorie
-Route::get('/search', [ProductController::class, 'search']); // Recherche de produits
-Route::get('/recommendations/{productId}', [RecommendationController::class, 'getRecommendations']); // Recommandations de produits
+    if (! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+        return response()->json(['message' => 'Lien invalide ou expiré.'], 400);
+    }
 
-// Authentification classique
-Route::post('/register', [AuthController::class, 'register']); // Inscription
-Route::post('/login', [AuthController::class, 'login']); // Connexion
+    if ($user->hasVerifiedEmail()) {
+        return response()->json(['message' => 'Email déjà vérifié.']);
+    }
 
+    $user->markEmailAsVerified();
+    event(new Verified($user));
+
+    return response()->json(['message' => 'Email vérifié avec succès.']);
+})->name('api.verify.email');
 
 // =================== ROUTES PROTÉGÉES ===================
-// Ces routes nécessitent une authentification via token (JWT)
 
-Route::middleware('auth:api')->group(function () {
+Route::middleware(['auth:api', 'verified.api'])->group(function () {
 
-    // Paiement
-    Route::post('/payment/paypal/success', [PaymentController::class, 'handlePaypalSuccess']); // Paiement PayPal validé
-    Route::post('/payment/stripe', [StripeController::class, 'createPaymentIntent']); // Création d’un paiement Stripe
-    Route::post('/payment/stripe/success', [StripeController::class, 'handleStripeSuccess']); // Paiement Stripe validé
-    Route::post('/payment/cod', [PaymentController::class, 'handleCashOnDelivery']); // Paiement à la livraison
+    // Paiements
+    Route::post('/payment/paypal/success', [PaymentController::class, 'handlePaypalSuccess']);
+    Route::post('/payment/stripe', [StripeController::class, 'createPaymentIntent']);
+    Route::post('/payment/stripe/success', [StripeController::class, 'handleStripeSuccess']);
+    Route::post('/payment/cod', [PaymentController::class, 'handleCashOnDelivery']);
 
-    // Ajout d’un avis client
-    Route::post('/reviews', [ReviewController::class, 'store']); // Ajouter un avis
+    // Utilisateur connecté
+    Route::get('/user', [AuthController::class, 'user']);
+    Route::put('/user', [AuthController::class, 'update']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Panier
+    Route::get('/cart', [CartController::class, 'index']);
+    Route::post('/cart/items', [CartController::class, 'store']);
+    Route::put('/cart/items/{id}', [CartController::class, 'update']);
+    Route::delete('/cart/items/{id}', [CartController::class, 'destroy']);
+
+    // Avis clients (authentifiés)
+    Route::post('/reviews', [ReviewController::class, 'store']);
     Route::put('/admin/reviews/{id}/approve', [ReviewController::class, 'approveReview']);
     Route::put('/admin/reviews/{id}/reject', [ReviewController::class, 'rejectReview']);
 
-
-    // Gestion du profil utilisateur
-    Route::get('/user', [AuthController::class, 'user']); // Informations de l’utilisateur connecté
-    Route::put('/user', [AuthController::class, 'update']); // Mise à jour du profil
-    Route::post('/logout', [AuthController::class, 'logout']); // Déconnexion
-
-    // Gestion du panier (cart)
-    Route::get('/cart', [CartController::class, 'index']); // Voir le panier
-    Route::post('/cart/items', [CartController::class, 'store']); // Ajouter un produit au panier
-    Route::put('/cart/items/{id}', [CartController::class, 'update']); // Modifier un produit du panier
-    Route::delete('/cart/items/{id}', [CartController::class, 'destroy']); // Supprimer un produit du panier
-
-    // Gestion des produits (admin uniquement)
-    Route::post('/products', [ProductController::class, 'store']); // Ajouter un produit
-    Route::put('/products/{id}', [ProductController::class, 'update']); // Modifier un produit
-    Route::delete('/products/{id}', [ProductController::class, 'destroy']); // Supprimer un produit
-
-    // Gestion des adresses de livraison
-    Route::post('/address', [AddressController::class, 'store']); // Ajouter une adresse
-    Route::get('/address', [AddressController::class, 'getAddress']); // Voir l’adresse de l’utilisateur
-    Route::put('/address', [AddressController::class, 'update']); // Modifier une adresse
-    Route::delete('/address', [AddressController::class, 'destroy']); // Supprimer une adresse
+    // Adresses
+    Route::post('/address', [AddressController::class, 'store']);
+    Route::get('/address', [AddressController::class, 'getAddress']);
+    Route::put('/address', [AddressController::class, 'update']);
+    Route::delete('/address', [AddressController::class, 'destroy']);
 
     // Commandes
-    Route::post('/orders', [OrderController::class, 'store']); // Passer une commande
-    Route::get('/orders', [OrderController::class, 'index']); // Voir toutes les commandes de l’utilisateur
-    Route::get('/orders/{id}', [OrderController::class, 'show']); // Voir les détails d’une commande
-    Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']); // Modifier le statut d’une commande (admin)
+    Route::post('/orders', [OrderController::class, 'store']);
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders/{id}', [OrderController::class, 'show']);
+    Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
 });

@@ -2,30 +2,32 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
 */
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-
-
+// Admin panel avec Voyager
 Route::group(['prefix' => 'admin'], function () {
     Voyager::routes();
 });
 
 
+Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
+    return redirect("http://localhost:3000/verify-email/$id/$hash");
+})->middleware(['signed'])->name('verification.verify');
 
+
+
+// Test accès token PayPal
 Route::get('/test-paypal', function () {
     $clientId = config('services.paypal.client_id');
     $secret = config('services.paypal.secret');
@@ -54,12 +56,11 @@ Route::get('/test-paypal', function () {
     ]);
 });
 
-
+// Debug PayPal
 Route::get('/debug-paypal', function () {
     return [
         'client_id' => config('services.paypal.client_id'),
         'secret' => config('services.paypal.secret'),
         'base_url' => config('services.paypal.base_url'),
     ];
-    
 });
