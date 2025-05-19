@@ -12,7 +12,7 @@ class VerifyEmailCode extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $user; // Pour accéder au code dans le template
+    public $user; 
 
     public function __construct(User $user)
     {

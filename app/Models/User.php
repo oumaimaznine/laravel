@@ -6,10 +6,13 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use TCG\Voyager\Contracts\User as VoyagerUserContract; 
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+
 
 use TCG\Voyager\Traits\VoyagerUser;
 
-class User extends \TCG\Voyager\Models\User implements JWTSubject, VoyagerUserContract
+class User extends \TCG\Voyager\Models\User implements JWTSubject, VoyagerUserContract, MustVerifyEmail
+
 {
     use Notifiable, VoyagerUser;
 
@@ -17,8 +20,7 @@ class User extends \TCG\Voyager\Models\User implements JWTSubject, VoyagerUserCo
         'name',
         'email',
         'password',
-        'verification_code',
-        'email_verified_at',
+       
     ];
 
     public function getJWTIdentifier()
