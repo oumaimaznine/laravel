@@ -4,7 +4,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Auth\Events\Verified;
 use App\Models\User;
 
 use App\Http\Controllers\Api\ProductController;
@@ -22,11 +21,11 @@ use App\Http\Controllers\ReviewController;
 
 // =================== ROUTES PUBLIQUES ===================
 
-// Auth classique
+// Authentification classique
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// Réseaux sociaux
+// Connexion via réseaux sociaux
 Route::get('/login/facebook', [SocialAuthController::class, 'redirectToFacebook']);
 Route::get('/login/facebook/callback', [SocialAuthController::class, 'handleFacebookCallback']);
 Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle']);
@@ -44,29 +43,7 @@ Route::get('/recommendations/{productId}', [RecommendationController::class, 'ge
 // Avis clients (visiteurs)
 Route::get('/products/{id}/reviews', [ReviewController::class, 'getProductReviews']);
 
-// Route de vérification d’email sécurisée (React)
-Route::get('/verify-email/{id}/{hash}', function (Request $request, $id, $hash) {
-    $user = User::find($id);
-
-    if (!$user) {
-        return response()->json(['message' => 'Utilisateur introuvable.'], 404);
-    }
-
-    if (! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
-        return response()->json(['message' => 'Lien invalide ou expiré.'], 400);
-    }
-
-    if ($user->hasVerifiedEmail()) {
-        return response()->json(['message' => 'Email déjà vérifié.']);
-    }
-
-    $user->markEmailAsVerified();
-    event(new Verified($user));
-
-    return response()->json(['message' => 'Email vérifié avec succès.']);
-})->name('api.verify.email');
-
-// =================== ROUTES PROTÉGÉES ===================
+// =================== ROUTES PROTÉGÉES (auth:api) ===================
 
 Route::middleware(['auth:api', 'verified.api'])->group(function () {
 
@@ -80,6 +57,7 @@ Route::middleware(['auth:api', 'verified.api'])->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::put('/user', [AuthController::class, 'update']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/refresh', [AuthController::class, 'refresh']);
 
     // Panier
     Route::get('/cart', [CartController::class, 'index']);
@@ -87,7 +65,7 @@ Route::middleware(['auth:api', 'verified.api'])->group(function () {
     Route::put('/cart/items/{id}', [CartController::class, 'update']);
     Route::delete('/cart/items/{id}', [CartController::class, 'destroy']);
 
-    // Avis clients (authentifiés)
+    // Avis clients
     Route::post('/reviews', [ReviewController::class, 'store']);
     Route::put('/admin/reviews/{id}/approve', [ReviewController::class, 'approveReview']);
     Route::put('/admin/reviews/{id}/reject', [ReviewController::class, 'rejectReview']);
