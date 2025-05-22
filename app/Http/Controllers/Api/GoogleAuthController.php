@@ -17,22 +17,31 @@ class GoogleAuthController extends Controller
     }
 
     public function handleGoogleCallback()
-    {
-        $googleUser = Socialite::driver('google')->stateless()->user();
+{
+    $googleUser = Socialite::driver('google')->stateless()->user();
 
-        $user = User::firstOrCreate(
-            ['email' => $googleUser->getEmail()],
-            [
-                'name' => $googleUser->getName(),
-                'password' => bcrypt(Str::random(16)),
-            ]
-        );
+    $user = User::firstOrCreate(
+        ['email' => $googleUser->getEmail()],
+        [
+            'name' => $googleUser->getName(),
+            'password' => bcrypt(Str::random(16)),
+            'email_verified_at' => now(),
+           
+        ]
+    );
+    
 
-        // Générer le token JWT
-        $token = JWTAuth::fromUser($user);
+    $token = JWTAuth::fromUser($user);
 
-        // Retourner user + token
-        return redirect('http://localhost:3000/google/callback?token=' . $token . '&user=' . urlencode(json_encode($user)));
+   
+    $safeUserData = json_encode([
+        'id' => $user->id,
+        'name' => $user->name,
+        'email' => $user->email,
+        'role_id' => $user->role_id,
+    ]);
 
-    }
+    return redirect('http://localhost:3000/google/callback?token=' . $token . '&user=' . urlencode($safeUserData));
+}
+
 }

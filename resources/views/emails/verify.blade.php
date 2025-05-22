@@ -44,6 +44,9 @@
     <p>Pour activer votre compte, cliquez ci-dessous :</p>
 
     <a href="{{ $actionUrl }}" class="btn">Confirmer l'adresse email</a>
+
+<hr style="margin: 30px 0; border: none; border-top: 1px solid #ccc;">
+
     <p style="margin-top: 20px;">Ce lien est valable pendant 24 heures.</p>
     <p>Si vous n’avez pas demandé cette inscription, ignorez ce message.</p>
 

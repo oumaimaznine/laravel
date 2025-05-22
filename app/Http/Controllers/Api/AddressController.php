@@ -21,7 +21,7 @@ class AddressController extends Controller
                 'city'        => 'required|string|max:255',
                 'postal_code' => 'nullable|string|max:20',
                 'country'     => 'required|string|max:255',
-                'save_info'   => 'boolean',
+              
             ]);
 
             $address = Address::create([
@@ -34,7 +34,7 @@ class AddressController extends Controller
                 'city'        => $request->city,
                 'postal_code' => $request->postal_code,
                 'country'     => $request->country,
-                'save_info'   => $request->save_info ?? false,
+             
             ]);
 
             return response()->json([
