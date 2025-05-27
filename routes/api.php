@@ -18,9 +18,10 @@ use App\Http\Controllers\Api\GoogleAuthController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\StripeController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\ContactController;
 
 // =================== ROUTES PUBLIQUES ===================
-
+Route::post('/contact', [ContactController::class, 'send']);
 // Authentification classique
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
